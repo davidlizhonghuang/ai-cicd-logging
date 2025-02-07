@@ -1,0 +1,42 @@
+name: Summarize_Build_Logs
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  summarize-build-logs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout_code
+      uses: actions/checkout@v2
+    - name: build-docker-image  
+      run: docker build -t my-app .
+    - name: setup-python  
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Parse-log-and-summarize
+    #this job use python to talk to openai
+      run: |
+        python summarize.py
+        echo "::set-output name=summary::$(cat summary.txt)"
+    - name: Run build
+      run: |
+        # Run your build process here
+        ./build.sh > build.log
+
+    - name: Summarize build logs
+      uses: openai/gpt-3-action@v1
+      with:
+        file: build.log
+        prompt: "Summarize the following build logs:"
+
+    - name: Post summary as comment
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          ## Build Log Summary
+          ${{ steps.summarize-build-logs.outputs.summary }}
