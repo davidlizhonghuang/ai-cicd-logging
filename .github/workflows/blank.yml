@@ -34,3 +34,31 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          pip3 install awscli --upgrade --user
+          echo "export PATH=~/.local/bin:$PATH" >> ~/.bashrc
+          source ~/.bashrc
+      - name: Deploy to S3
+        run: |
+          aws s3 sync . s3://my-bucket --delete
+          aws s3 cp s3:
+          //my-bucket/index.html s3://my-bucket/index.html --metadata-directive REPLACE --cache-control max-age=0
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+      - uses: actions/checkout@v4
+      - name: Run a one-line script
+        run: echo Hello, world!
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
